@@ -103,7 +103,7 @@ module DppmRestApi::Actions::App
   # start the service associated with the given application
   put (root_path "/:app_name/service/boot") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Update
+    if context.current_user? && has_access? context, Access::Update
       # TODO: boot the service
       puts "user found!"
     end
@@ -112,7 +112,7 @@ module DppmRestApi::Actions::App
   # reload the service associated with the given application
   put (root_path "/:app_name/service/reload") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Update
+    if context.current_user? && has_access? context, Access::Update
       # TODO: reload the service
     end
     deny_access! to: context
@@ -120,7 +120,7 @@ module DppmRestApi::Actions::App
   # restart the service associated with the given application
   put (root_path "/:app_name/service/restart") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Update
+    if context.current_user? && has_access? context, Access::Update
       # TODO: reboot the service
     end
     deny_access! to: context
@@ -128,7 +128,7 @@ module DppmRestApi::Actions::App
   # start the service associated with the given application
   put (root_path "/:app_name/service/start") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Update
+    if context.current_user? && has_access? context, Access::Update
       # TODO: start the service
     end
     deny_access! to: context
@@ -136,7 +136,7 @@ module DppmRestApi::Actions::App
   # get the status of the service associated with the given application
   put (root_path "/:app_name/service/status") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: get the status of the service
     end
     deny_access! to: context
@@ -144,7 +144,7 @@ module DppmRestApi::Actions::App
   # stop the service associated with the given application
   put (root_path "/:app_name/service/stop") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Update
+    if context.current_user? && has_access? context, Access::Update
       # TODO: stop the service
     end
     deny_access! to: context
@@ -152,7 +152,7 @@ module DppmRestApi::Actions::App
   # lists dependent library packages
   get (root_path "/:app_name/libs") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: list dependencies
     end
     deny_access! to: context
@@ -160,7 +160,7 @@ module DppmRestApi::Actions::App
   # return the base application package
   get (root_path "/:app_name/app") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: return the base application package
     end
     deny_access! to: context
@@ -168,7 +168,7 @@ module DppmRestApi::Actions::App
   # returns information present in pkg.con as JSON
   get (root_path "/:app_name/pkg") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: return package data
     end
     deny_access! to: context
@@ -178,7 +178,7 @@ module DppmRestApi::Actions::App
   # current log data.
   get (root_path "/:app_name/logs") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: upgrade to websocket or output logs to date
     end
     deny_access! to: context
@@ -186,7 +186,7 @@ module DppmRestApi::Actions::App
   # Stream the logs for the given application over the websocket connection.
   ws (root_path "/:app_name/logs") do |sock, context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: stream logs to sock
     end
     deny_access! to: context
@@ -204,7 +204,7 @@ module DppmRestApi::Actions::App
   # Delete the given application
   delete (root_path "/:app_name") do |context|
     app_name = context.params.url["app_name"]
-    if context.current_user? && has_access? context.current_user, app_name, Access::Delete
+    if context.current_user? && has_access? context, Access::Delete
       # TODO: delete the app
     end
     deny_access! to: context
