@@ -12,4 +12,6 @@ module DppmRestApi::Actions
   include Src
 
   options("/api") { |context| File.open(API_DOCUMENT) { |file| render_data file } }
+
+  Kemal.run port: DppmRestApi.config.port.to_i
 end

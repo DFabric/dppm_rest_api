@@ -4,7 +4,7 @@ module DppmRestApi
   struct Config
     struct File
       include JSON::Serializable
-      property roles : Array(Role)
+      property groups : Array(Group)
       property users : Array(User)
     end
   end

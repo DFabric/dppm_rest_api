@@ -7,43 +7,35 @@ module DppmRestApi::Actions::Pkg
   ONE_PKG  = root_path "/:id"
   # List built packages
   get ALL_PKGS do |context|
-    if context.current_user? && has_access? context.current_user, Access::Read
+    if context.current_user? && has_access? context, Access::Read
       # TODO: list all built packages
+      next context
     end
     deny_access! to: context
   end
   # Clean unused built packages
   delete ALL_PKGS do |context|
-    if context.current_user? && has_access? context.current_user, Access::Delete
+    if context.current_user? && has_access? context, Access::Delete
       # TODO: delete all unused built packages
+      next context
     end
     deny_access! to: context
   end
   # Query information about a given package
   get ONE_PKG do |context|
-    if context.current_user? && has_access? context.current_user, Access::Read, context.params.url["id"]?
+    if context.current_user? && has_access? context, Access::Read
       # TODO: Query information about the given package
+      next context
     end
     deny_access! to: context
   end
   # Delete a given package
   delete ONE_PKG do |context|
-    if context.current_user? && has_access? context.current_user, Access::Delete, context.params.url["id"]?
+    if context.current_user? && has_access? context, Access::Delete
       # TODO: Query information about the given package
+      next context
     end
     deny_access! to: context
-  end
-
-  protected def self.has_access?(user, permission, id = nil)
-    if role = DppmRestApi.config.file.roles.find { |role| role.name === user["role"]? }
-      if not_nil_id = id
-        return true if role.owned.pkgs.includes?(permission) &&
-                       (owned_pkgs = user["owned_pkgs"]?).try &.is_a?(String) &&
-                       owned_pkgs.as(String).split(',').map { |e| Base64.decode e }.includes?(not_nil_id)
-      end
-      true if role.not_owned.pkgs.includes? permission
-    end
-    false
   end
 
   module Build
