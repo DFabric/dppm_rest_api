@@ -1,5 +1,3 @@
 host "[::1]"
 port 8994
-sources {
-  default "https://github.com/DFabric/packages-source/tarball/master"
-}
+source "https://github.com/DFabric/packages-source/tarball/master"

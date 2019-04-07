@@ -1,5 +1,5 @@
 require "../../utils"
-require "dppm/prefix"
+require "dppm"
 
 module DppmRestApi::Actions::App
   extend self
@@ -58,10 +58,26 @@ module DppmRestApi::Actions::App
     key = context.params.url["key"]
     if context.current_user? && has_access? context.current_user, app_name, Access::Read
       app = Prefix.new(prefix).new_app app_name
-      if key == "."
-        dump_config context, app
-      elsif config = app.get_config(key)
-        context.response.puts({"data" => config, "errors" => [] of Nil}.to_json)
+      if config = app.config
+        if key == "."
+          JSON.build context.response do |json|
+            json.object do
+              json.field "data" do
+                json.object do
+                  app.each_config_key do |key|
+                    json.field name: key, value: app.get_config key
+                  end
+                end
+              end
+              json.field "errors" do
+                json.array { }
+              end
+            end
+          end
+          context.response.flush
+        else
+          context.response.puts({"data" => app.get_config(key), "errors" => [] of Nil}.to_json)
+        end
       else
         throw "no config with app named '%s' found", app_name, status_code: 404
       end
@@ -73,7 +89,11 @@ module DppmRestApi::Actions::App
     app_name = context.params.url["app_name"]
     key = context.params.url["key"]
     if context.current_user? && has_access? context.current_user, app_name, Access::Create
-      set_config context, key, app_name
+      if posted = context.request.body
+        Prefix.new(prefix).new_app(app_name).set_config key, posted.gets_to_end
+      else
+        throw "setting config data requires a request body"
+      end
     end
     deny_access! to: context
   end
