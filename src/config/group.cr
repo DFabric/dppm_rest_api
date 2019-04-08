@@ -1,4 +1,5 @@
-require "./group/route_matcher"
+require "./access"
+require "./route"
 
 module DppmRestApi
   # A group represents an access role that a user may be a member of.
@@ -18,9 +19,9 @@ module DppmRestApi
     def can_access?(verb, path, permission : Access) : Bool
       if access = permissions
            .select { |route| route.verb == verb }
-           .find { |route| route.match? path }
+           .find { |route| route.match? verb, path }
            .try &.permissions
-        access & permission > 0
+        access.value & permission.value > 0
       else
         false
       end

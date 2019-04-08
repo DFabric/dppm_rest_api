@@ -1,0 +1,105 @@
+# The main api root, to allow for separating this API on the same domain behind a reverse proxy
+/api:
+  verbs: OPTIONS
+  returns: this document (roughly) in JSON
+  /register: # perhaps don't have this, have it be in a config file?
+    verbs: POST
+  /sign_in:
+    verbs: POST
+    post body: JSON-encoded login data
+    returns: A JWT which encodes user authentication and an expiry date.
+  # No /sign_out necessary, just delete the JWT in the client.
+  /:namespace:
+    /app:
+      returns: JSON object mapping app IDs to package names
+      /:pkg_name?db={type}&addr={url}&id={app id}&server={server_id}:
+        does: Install a package
+        required params: name
+        optional params:
+          - db
+          - addr
+          - id (generated if not provided)
+          - server_id
+        returns: app ID
+        verbs: PATCH
+      /:app_name:
+        verbs: DELETE
+        does: removes the package specified by the app id
+        /config:
+          verbs: GET
+          returns: all keys
+          /:key:
+            verbs:
+              GET:
+                returns: the contents of this config item
+              POST:
+                post body: the value to be set
+              DELETE:
+        /service:
+          start
+          stop
+          etc...
+        /libs:
+            lists dependent library packages
+        /app:
+            return the base application package
+        /pkg:
+            returns information present in pkg.con as JSON
+        /logs?stream={bool}:
+          returns: JSON-encoded log data
+          does: if stream is set, attempt to upgrade to a websocket and stream
+                the results.
+
+    /service?system={bool}:
+      # list services, including, or not, system ones
+      returns: list of service IDs
+      /:svc_id/boot:
+      /:svc_id/reload:
+      /:svc_id/restart:
+      /:svc_id/start:
+      /status:
+        returns: JSON-encoded mapping of service-ids to each service's status
+      /:svc_id/status:
+        returns: the status of this service like { run: bool, boot: bool, status: text }
+      /:svc_id/stop:
+
+    /pkg:
+      # list built packages
+      verbs:
+        GET:
+          returns: list of package IDs
+        DELETE:
+          does: clean unused built packages
+      /:id/:version:
+        required: id
+        optional: version
+        verbs:
+          GET:
+            returns: JSON-formatted output of `dppm package query :id`
+          DELETE:
+            does: removes the given package
+      /build/:package_name/:version:
+        required: package_name
+        optional: version
+        verbs: POST
+        returns: the ID of the built image
+
+    /src?type={package_type}:
+      # list all available source packages
+      # the package type is either "app" or "lib"
+
+    /auth:
+      /group:
+        /:id:
+          POST:
+            body: A new group configuration
+            example:
+              - path pattern: /*/some/{other,options}/**
+                permissions: Create | Read | Update | Delete
+              - path pattern: /another/path
+                permissions: None
+
+          GET:
+            returns: The group's configuration
+
+      /user:

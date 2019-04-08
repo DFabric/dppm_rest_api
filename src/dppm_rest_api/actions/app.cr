@@ -1,3 +1,4 @@
+require "../../config/route"
 require "../../utils"
 require "dppm/prefix"
 
@@ -207,11 +208,9 @@ module DppmRestApi::Actions::App
   # Install the given package
   put (root_path "/:package_name") do |context|
     pkg_name = context.params.url["package_name"]
-    if context.current_user? && (role = DppmRestApi.config.file.roles.find { |role| role.name === context.current_user["role"]? })
-      if role.not_owned.apps.create?
-        # TODO: install the package and return its name
-        next context
-      end
+    if context.current_user? && has_access? context, Access::Create
+      # TODO: install the package and return its name
+      next context
     end
     deny_access! to: context
   end

@@ -1,6 +1,7 @@
 require "kemal"
 require "kemal_jwt_auth"
-require "./config/users"
+require "./config/user"
+require "./config/route"
 
 # Render the given data as JSON to the local `context` variable.
 macro render_data(data)
@@ -24,20 +25,21 @@ def deny_access!(to context)
   context
 end
 
-private def deserialize(groups maybe_nil : String?)
-  if groups = maybe_nil
+private def deserialize(groups ambiguously_typed : Bool | Int32 | String?)
+  if (groups = ambiguously_typed).is_a? String
     groups.split(",").map &.to_i
   end
 end
 
 # returns true if the given user has access to the given context with the given
 # permission type
-def has_access?(context : HTTP::Status::Context, permission : DppmRestApi::Access)
-  verb = Group::Route::HTTPVerb.from_s(context.request.method)
-  if groups = deserialize context.current_user?.try { |user| user["groups"]? }
-    groups.each do |group|
-      if found = DppmRestApi.config.file.groups.find { |g| g.id == group }
-        return true if found.can_access? verb, context.request.path, permission
+def has_access?(context : HTTP::Server::Context, permission : DppmRestApi::Access)
+  if verb = DppmRestApi::Route::HTTPVerb.parse? context.request.method
+    if groups = deserialize context.current_user?.try { |user| user["groups"]? }
+      groups.each do |group|
+        if found = DppmRestApi.config.file.groups.find { |g| g.id == group }
+          return true if found.can_access? verb, context.request.path, permission
+        end
       end
     end
   end
