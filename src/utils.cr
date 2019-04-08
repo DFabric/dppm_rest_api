@@ -1,20 +1,12 @@
 require "kemal"
 require "kemal_jwt_auth"
-require "./config/users"
+require "./config/user"
+require "./config/route"
 
 # Render the given data as JSON to the local `context` variable.
 macro render_data(data)
   context.response.content_type = "application/json"
   IO.copy {{data.id}}, context.response
-end
-
-macro root_path(route = nil, &block)
-  {{
-    "/" + @type.stringify
-      .downcase
-      .gsub(/^DppmRestApi::Actions::/, "")
-      .gsub(/::/, "/") + (route || "")
-  }}
 end
 
 def deny_access!(to context)
@@ -24,21 +16,18 @@ def deny_access!(to context)
   context
 end
 
-private def deserialize(groups maybe_nil : String?)
-  if groups = maybe_nil
+private def deserialize(groups ambiguously_typed : Bool | Int32 | String?)
+  if (groups = ambiguously_typed).is_a? String
     groups.split(",").map &.to_i
   end
 end
 
 # returns true if the given user has access to the given context with the given
 # permission type
-def has_access?(context : HTTP::Status::Context, permission : DppmRestApi::Access)
-  verb = Group::Route::HTTPVerb.from_s(context.request.method)
-  if groups = deserialize context.current_user?.try { |user| user["groups"]? }
-    groups.each do |group|
-      if found = DppmRestApi.config.file.groups.find { |g| g.id == group }
-        return true if found.can_access? verb, context.request.path, permission
-      end
+def has_access?(context : HTTP::Server::Context, permission : DppmRestApi::Access)
+  if verb = DppmRestApi::Route::HTTPVerb.parse? context.request.method
+    if user = context.current_user?.try { |user| DppmRestApi::User.from_h hash: user }
+      return true if user.find_group? &.can_access?(verb, context.request.path, permission)
     end
   end
   false
@@ -48,7 +37,25 @@ alias JWTCompatibleHash = Hash(String, String | Int32 | Bool?)
 
 macro throw(message, *format, status_code = 500)
   context.response.status_code = {{status_code.id}}
-  context.response.puts sprintf {{message}}, {{format.splat.id}}
+  context.response.printf "{{message.id}}\n", {{format.splat.id}}
   context.response.flush
   context
 end
+
+macro fmt_route(route = "", namespace = false)
+  {{ "/" + @type.stringify
+       .downcase
+       .gsub(/^DppmRestApi::Actions::/, "")
+       .gsub(/::/, "/") }} + ( {{route}} || "")
+end
+
+# the "last" or -1st block argument is selected because context is always the
+# argument -- either the only or the second of two
+{% for method in %w(get post put delete ws) %}
+macro relative_{{method.id}}(route, &block)
+  {{method.id}} fmt_route(\{{route}}) do |\{{block.args.splat}}|
+    namespace = \{{block.args[-1]}}.params.query["namespace"]? || DppmRestApi.default_namespace
+    \{{block.body}}
+  end
+end
+{% end %}

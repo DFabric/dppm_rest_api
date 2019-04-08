@@ -1,0 +1,83 @@
+{
+  "users":[
+    {
+      "api_key_hash":"400$8$2b$f5726490$373097ee2bb99df0eb825ef343dccaa341d23e29569b45a2e9a6b0cc3319d80a",
+      "name":"Administrator",
+      "groups":[
+        0
+      ]
+    },
+    {
+      "api_key_hash":"400$8$1b$78f8bd91$70f0f5d5a8da1f2f5a54e7f4ab35bfa1054eeca1168e92c7a4b1881489b017a6",
+      "name":"Jim Oliver",
+      "groups":[
+        850,
+        851
+      ]
+    },
+    {
+      "api_key_hash":"400$8$1f$809ed9f8$e93bd50967bd6d3df81b7f986bce20793215fd577d1d210478341dbd30dadb5b",
+      "name":"Test User",
+      "groups":[
+        852
+      ]
+    }
+  ],
+  "groups":[
+    {
+      "name":"admin",
+      "id":0,
+      "permissions":{
+        "/**":{
+          "access":"All",
+          "query_parameters":{
+            "namespace": "*"
+          }
+        }
+      }
+    },
+    {
+      "name":"Normal user",
+      "id":850,
+      "permissions":{
+        "/app/*":{
+          "access": ["Create", "Read"]
+        },
+        "/app/*/config/**":{
+          "access": "None"
+        },
+        "/app/service/*":{
+          "access":"None"
+        }
+      }
+    },
+    {
+      "name":"Default namespace",
+      "id":851,
+      "permissions":{
+        "/{app,pkg,service,src}/**":{
+          "access":[
+            "Create",
+            "Read",
+            "Update"
+          ],
+          "query_parameters":{
+            "namespace": "default_namspace"
+          }
+        }
+      }
+    },
+    {
+      "name":"Testing user",
+      "id":852,
+      "permissions":{
+        "/**":{
+          "access":"All",
+          "query_parameters":{
+            "namespace": "test-*"
+          }
+        }
+      }
+    }
+  ]
+}
