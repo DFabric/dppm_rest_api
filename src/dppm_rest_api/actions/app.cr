@@ -58,26 +58,10 @@ module DppmRestApi::Actions::App
     key = context.params.url["key"]
     if context.current_user? && has_access? context.current_user, app_name, Access::Read
       app = Prefix.new(prefix).new_app app_name
-      if config = app.config
-        if key == "."
-          JSON.build context.response do |json|
-            json.object do
-              json.field "data" do
-                json.object do
-                  app.each_config_key do |key|
-                    json.field name: key, value: app.get_config key
-                  end
-                end
-              end
-              json.field "errors" do
-                json.array { }
-              end
-            end
-          end
-          context.response.flush
-        else
-          context.response.puts({"data" => app.get_config(key), "errors" => [] of Nil}.to_json)
-        end
+      if key == "."
+        dump_config context, app
+      elsif config = app.get_config(key)
+        context.response.puts({"data" => config, "errors" => [] of Nil}.to_json)
       else
         throw "no config with app named '%s' found", app_name, status_code: 404
       end
