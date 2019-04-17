@@ -22,3 +22,4 @@ steps:
   image: jrei/crystal-alpine
   commands:
   - crystal spec
+  - shards build --progress --static
