@@ -17,9 +17,16 @@ macro root_path(route = nil, &block)
   }}
 end
 
-macro deny_access
+def deny_access!(to context)
   context.response.status_code = 401
   context.response.write "Forbidden.".to_slice
+  context.response.flush
+  context
+end
+
+macro throw(message, *format, status_code = 500)
+  context.response.status_code = {{status_code.id}}
+  context.response.puts sprintf {{message}}, {{format.splat.id}}
   context.response.flush
   context
 end
