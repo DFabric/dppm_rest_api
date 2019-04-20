@@ -14,7 +14,6 @@ steps:
 - name: build
   image: jrei/crystal-alpine
   commands:
-  - apk add curl
   - shards install
   - shards build --time --static
 
@@ -22,4 +21,3 @@ steps:
   image: jrei/crystal-alpine
   commands:
   - crystal spec
-  - shards build --progress --static
