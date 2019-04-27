@@ -73,11 +73,7 @@ module DppmRestApi::Actions::App
     app_name = context.params.url["app_name"]
     key = context.params.url["key"]
     if context.current_user? && has_access? context.current_user, app_name, Access::Create
-      if posted = context.request.body
-        Prefix.new(prefix).new_app(app_name).set_config key, posted.gets_to_end
-      else
-        throw "setting config data requires a request body"
-      end
+      set_config context, key, app_name
     end
     deny_access! to: context
   end
