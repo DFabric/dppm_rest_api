@@ -12,19 +12,23 @@ module DppmRestApi
     property id : Int32
     # All route-matching globs associated with this `Group`, mapped to the
     # group's permission level.
-    property permissions : Array(Route)
+    property permissions : Hash(String, Route)
 
     # returns true if members of this group may access a request on the given
     # route, with the given permission level.
-    def can_access?(verb, path, permission : Access) : Bool
-      if access = permissions
-           .select { |route| route.verb == verb }
-           .find { |route| route.match? verb, path }
-           .try &.permissions
-        access.value & permission.value > 0
-      else
-        false
+    def can_access?(path : String, query : HTTP::Params, requested_permissions : Access) : Bool
+      maybe_nil_perms = permissions
+        .find do |pattern, route|
+          # Find the first route that matches both the path glob and the query list
+          File.match?(pattern, path) && route.match? query
+        end
+        .try { |_, route| route.permissions }
+      if configured_permissions = maybe_nil_perms
+        # If the "flag is set" this will return true, otherwise it will return
+        # false
+        return configured_permissions.includes? requested_permissions
       end
+      false
     end
 
     def initialize(@name, @id, @permissions); end

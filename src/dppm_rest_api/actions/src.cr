@@ -1,9 +1,6 @@
-require "../../config"
-require "../../utils"
-
 module DppmRestApi::Actions::Src
   extend self
-  get root_path do |context|
+  relative_get "" do |context|
     if context.current_user? && has_access? context, Access::Read
       # TODO: List all available source packages
       next context
@@ -11,7 +8,7 @@ module DppmRestApi::Actions::Src
     deny_access! to: context
   end
   # List all available source packages, of either the *lib* or *app* type.
-  get (root_path "/:type") do |context|
+  relative_get "/:type" do |context|
     if context.current_user? && has_access? context, Access::Read
       # TODO: List available source packages
       next context

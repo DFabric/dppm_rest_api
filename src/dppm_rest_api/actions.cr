@@ -1,4 +1,5 @@
 require "kemal"
+require "./utils"
 require "./middlewares"
 require "./actions/*"
 
