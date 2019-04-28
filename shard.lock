@@ -79,4 +79,3 @@ shards:
   tail:
     github: j8r/tail
     version: 0.2.2
-

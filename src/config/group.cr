@@ -26,6 +26,13 @@ module DppmRestApi
       false
     end
 
+  def can_access?(context : HTTP::Server::Context, permissions : Access) : Bool
+      can_access?(
+        context.request.path,
+        HTTP::Params.parse(context.request.query || ""),
+        permissions)
+    end
+
     def initialize(@name, @id, @permissions); end
 
     @@counter = 0

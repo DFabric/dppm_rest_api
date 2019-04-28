@@ -25,10 +25,8 @@ end
 # returns true if the given user has access to the given context with the given
 # permission type
 def has_access?(context : HTTP::Server::Context, permission : DppmRestApi::Access)
-  if verb = DppmRestApi::Route::HTTPVerb.parse? context.request.method
-    if user = context.current_user?.try { |user| DppmRestApi::User.from_h hash: user }
-      return true if user.find_group? &.can_access?(verb, context.request.path, permission)
-    end
+  if user = context.current_user?.try { |user| DppmRestApi::User.from_h hash: user }
+    return true if user.find_group? &.can_access?(context, permission)
   end
   false
 end
