@@ -1,7 +1,5 @@
 def deny_access!(to context)
   context.response.status_code = 401
-  context.response.write "Forbidden.".to_slice
-  context.response.flush
   context
 end
 

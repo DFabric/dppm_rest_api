@@ -5,7 +5,8 @@ macro initialize_error_handlers
       builder.object do
         builder.field "errors" do
           builder.array do
-            builder.string HTTP::Status::{{code.id}}.description || "{{code.id}}".capitalize.gsub('_', ' ')
+            builder.string HTTP::Status::{{code.id}}.description || "{{code.id}}".capitalize.gsub '_', ' '
+            context.errors.each { |err| builder.string err }
           end
         end
       end

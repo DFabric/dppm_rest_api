@@ -1,6 +1,6 @@
 require "dppm"
-# require "../config/route"
 require "dppm/prefix"
+require "../actions"
 
 module DppmRestApi::Actions::App
   extend self

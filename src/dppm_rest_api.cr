@@ -1,4 +1,5 @@
 require "kemal"
+require "./ext/**"
 require "./errors/*"
 require "./config"
 require "./actions"

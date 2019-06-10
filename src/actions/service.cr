@@ -1,3 +1,5 @@
+require "../actions"
+
 module DppmRestApi::Actions::Service
   extend self
   # List the managed services. The `system` query parameter may be specified to
