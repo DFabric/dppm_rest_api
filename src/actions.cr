@@ -20,7 +20,7 @@ module DppmRestApi::Actions
                        message : String,
                        status_code = 500)
     context.response.status_code = status_code
-    context.error! message
+    context.push "error", message
     context
   end
 end

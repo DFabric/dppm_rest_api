@@ -2,11 +2,22 @@ require "kemal"
 
 class HTTP::Server
   class Context
-    property errors = [] of String
+    macro finished
+      @stacks = {} of String => Deque(StoreTypes)
+    end
 
-    def error!(message : String, status_code : Int? = nil)
-      response.status_code = status_code if status_code
-      errors << message
+    def push(key : String, value : StoreTypes) : Deque(StoreTypes)
+      stack = @stacks[key]? || Deque(StoreTypes).new
+      stack.push value
+      @stacks[key] = stack
+    end
+
+    def pop?(key : String)
+      @stacks[key]?.try &.pop?
+    end
+
+    def pop(key : String)
+      pop?(key) || raise KeyError.new "context has no items for #{key}"
     end
   end
 end
