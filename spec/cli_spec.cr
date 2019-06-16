@@ -2,6 +2,34 @@ require "./spec_helper"
 require "../src/cli"
 
 module DppmRestApi::CLI
+  def self.restore_to_original(state_file : File?)
+    state_file.try do |file|
+      File.open permissions_file!, mode: "w" do |dest|
+        File.open file.path do |src|
+          IO.copy src, dest
+        end
+      end
+      File.delete file.path
+    end
+    File.open permissions_file! do |file|
+      DppmRestApi.permissions_config = Config.from_json file
+    end
+  end
+
+  def self.store_current_state
+    File.tempfile "permissions", ".json" do |file|
+      DppmRestApi.permissions_config.to_json file, indent: 2
+      file.flush
+    end
+  end
+
+  def self.with_state_restore
+    state_file = store_current_state
+    yield
+  ensure
+    restore_to_original state_file
+  end
+
   private macro require_arg(arg, &block)
     it "requires the {{arg.id}} argument" do
       expect_raises RequiredArgument, message: "the argument '{{arg.id}}' is required!" do
@@ -53,7 +81,7 @@ module DppmRestApi::CLI
       {% end %}
       it "selects by api key" do
         mock_users = DppmRestApi.permissions_config.users
-        selected = selected_users nil, nil, Fixtures::TEST_USER_RAW_API_KEYS[:normal_user], from: mock_users
+        selected = selected_users nil, nil, DppmRestApi::Fixtures::TEST_USER_RAW_API_KEYS[:normal_user], from: mock_users
         selected.size.should eq 1
         selected.first.name.should eq "Jim Oliver"
         selected.first.groups.map(&.id).should eq [499, 1000]
@@ -61,17 +89,19 @@ module DppmRestApi::CLI
     end
     describe "#add_user" do
       it "adds a user" do
-        tmp = File.tempname
-        add_user name: "added user", groups: "500", data_dir: __DIR__, output_file: tmp
-        key = File.read_lines(tmp)[1]
-        config = File.open PERMISSION_FILE do |permissions_file|
-          Config.from_json permissions_file.rewind
-        end
-        if user = config.users.find { |usr| usr.name == "added user" }
-          user.api_key_hash.verify(key).should be_true
-          user.group_ids.should eq Set{500}
-        else
-          fail "user failed to be added"
+        with_state_restore do
+          tmp = File.tempname
+          add_user name: "added user", groups: "500", data_dir: __DIR__, output_file: tmp
+          key = File.read_lines(tmp)[1]
+          config = File.open permissions_file! do |permissions_file|
+            Config.from_json permissions_file.rewind
+          end
+          if user = config.users.find { |usr| usr.name == "added user" }
+            user.api_key_hash.verify(key).should be_true
+            user.group_ids.should eq Set{500}
+          else
+            fail "user failed to be added"
+          end
         end
       end
     end
@@ -87,15 +117,19 @@ module DppmRestApi::CLI
   end
   describe "#edit_users" do
     it "edits a user" do
-      edit_users match_name: "/^Jim/",
-        match_groups: nil,
-        api_key: nil,
-        new_name: "changed name",
-        add_groups: "500",
-        remove_groups: "499",
-        data_dir: __DIR__
-      new_state = File.open PERMISSION_FILE do |file|
-        Config.from_json file
+      with_state_restore do
+        edit_users match_name: "/^Jim/",
+          match_groups: nil,
+          api_key: nil,
+          new_name: "changed name",
+          add_groups: "500",
+          remove_groups: "499",
+          data_dir: __DIR__
+        new_state = File.open permissions_file! do |file|
+          Config.from_json file
+        end
+        new_state.users.find { |usr| usr.name == "Jim Oliver" }.should be_nil
+        new_state.users.find { |usr| usr.name == "changed name" }.try(&.group_ids).should eq Set{500, 1000}
       end
       new_state.users.find { |usr| usr.name == "Jim Oliver" }.should be_nil
       new_state.users.find { |usr| usr.name == "changed name" }.try(&.group_ids).should eq Set{500, 1000}
@@ -120,12 +154,16 @@ module DppmRestApi::CLI
         .api_key_hash
       rekey_users match_name: "Administrator",
 
-        match_groups: nil,
-        api_key: nil,
-        data_dir: __DIR__,
-        output_file: data_file.path
-      new_state = File.open PERMISSION_FILE do |file|
-        Config.from_json file
+          match_groups: nil,
+          api_key: nil,
+          data_dir: __DIR__,
+          output_file: data_file.path
+        new_state = File.open permissions_file! do |file|
+          Config.from_json file
+        end
+        new_key = File.read_lines(data_file.path)[1]
+        new_state.users.find { |usr| usr.name == "Administrator" }.not_nil!.api_key_hash.verify(new_key).should be_true
+        orig_key_hash.should_not eq new_key
       end
       new_key = File.read_lines(data_file.path)[1]
       new_state.users.find { |usr| usr.name == "Administrator" }.not_nil!.api_key_hash.verify(new_key).should be_true
@@ -137,9 +175,12 @@ module DppmRestApi::CLI
   end
   describe "#delete_users" do
     it "deletes a user" do
-      delete_users match_name: nil, match_groups: "0", api_key: nil, data_dir: __DIR__
-      new_state = File.open PERMISSION_FILE do |file|
-        Config.from_json file
+      with_state_restore do
+        delete_users match_name: nil, match_groups: "0", api_key: nil, data_dir: __DIR__
+        new_state = File.open permissions_file! do |file|
+          Config.from_json file
+        end
+        new_state.users.find { |usr| usr.name == "Administrator" }.should be_nil
       end
       new_state.users.find { |usr| usr.name == "Administrator" }.should be_nil
     end
@@ -180,14 +221,21 @@ module DppmRestApi::CLI
       add_group id: "34567", name: "data-dir missing test", permissions: "technically not nil", data_dir: nil
     end
     it "adds a group" do
-      new_grp_permissions = {"/pkg/**" => {permissions: DppmRestApi::Access::Read}}
-      add_group(
-        id: "1234",
-        name: "test-added group",
-        permissions: new_grp_permissions.to_json,
-        data_dir: __DIR__)
-      new_state = File.open PERMISSION_FILE do |file|
-        Config.from_json file
+      with_state_restore do
+        new_grp_permissions = {"/pkg/**" => {permissions: DppmRestApi::Access::Read}}
+        add_group(
+          id: "1234",
+          name: "test-added group",
+          permissions: new_grp_permissions.to_json,
+          data_dir: __DIR__)
+        new_state = File.open permissions_file! do |file|
+          Config.from_json file
+        end
+        new_state.groups.find { |group| group.id == 1234 }.should_not be_nil
+        new_state.groups
+          .find { |group| group.id == 1234 }
+          .try(&.can_access? "/pkg/something", HTTP::Params.new, Access::Read)
+          .should be_true
       end
       new_state.groups.find { |group| group.id == 1234 }.should_not be_nil
       new_state.groups
@@ -214,28 +262,32 @@ module DppmRestApi::CLI
       end
     end
     it "can make Administrator read-only" do
-      edit_access id: "0",
-        path: "/**",
-        access: "Read",
-        data_dir: __DIR__
-      new_state = File.open PERMISSION_FILE do |file|
-        Config.from_json file.rewind
-      end
-      if su = new_state.groups.find { |group| group.id == 0 }
-        su.can_access?(
-          "/literally/anything",
-          HTTP::Params.new({} of String => Array(String)),
-          DppmRestApi::Access::Read
-        ).should be_true
-        su.can_access?(
-          "/literally/anything",
-          HTTP::Params.new({} of String => Array(String)),
-          DppmRestApi::Access::Update
-        ).should be_false
-        if route = su.permissions["/**"]?
-          route.permissions.should eq DppmRestApi::Access::Read
-          empty_params = {} of String => Array(String)
-          route.query_parameters.should eq empty_params
+      with_state_restore do
+        edit_access id: "0",
+          path: "/**",
+          access: "Read",
+          data_dir: __DIR__
+        new_state = File.open permissions_file! do |file|
+          Config.from_json file.rewind
+        end
+        if su = new_state.groups.find { |group| group.id == 0 }
+          su.can_access?(
+            "/literally/anything",
+            HTTP::Params.new({} of String => Array(String)),
+            DppmRestApi::Access::Read
+          ).should be_true
+          su.can_access?(
+            "/literally/anything",
+            HTTP::Params.new({} of String => Array(String)),
+            DppmRestApi::Access::Update
+          ).should be_false
+          if route = su.permissions["/**"]?
+            route.permissions.should eq DppmRestApi::Access::Read
+            empty_params = {} of String => Array(String)
+            route.query_parameters.should eq empty_params
+          else
+            fail %[route "/**" not found in #{su.permissions}]
+          end
         else
           fail %[route "/**" not found in #{su.permissions}]
         end
@@ -267,15 +319,21 @@ module DppmRestApi::CLI
         end
       end
       it "can add a glob to a query" do
-        edit_group_query id: "1000",
-          path: "/**",
-          access: "Create | Read | Delete",
-          data_dir: __DIR__,
-          key: "test-key",
-          add_glob: "test-glob",
-          remove_glob: nil
-        new_state = File.open PERMISSION_FILE do |file|
-          Config.from_json file
+        with_state_restore do
+          edit_group_query id: "1000",
+            path: "/**",
+            access: "Create | Read | Delete",
+            data_dir: __DIR__,
+            key: "test-key",
+            add_glob: "test-glob",
+            remove_glob: nil
+          new_state = File.open permissions_file! do |file|
+            Config.from_json file
+          end
+          test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
+          test_group.permissions["/**"]
+            .query_parameters["test-key"]?
+            .should eq ["test-glob"]
         end
         test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
         test_group.permissions["/**"]
@@ -285,9 +343,13 @@ module DppmRestApi::CLI
     end
     describe "#add_route" do
       it "can add a path to a group's #permissions values" do
-        add_route id: "1000", access: "Read", path: "/some/path", data_dir: __DIR__
-        new_state = File.open PERMISSION_FILE do |file|
-          Config.from_json file
+        with_state_restore do
+          add_route id: "1000", access: "Read", path: "/some/path", data_dir: __DIR__
+          new_state = File.open permissions_file! do |file|
+            Config.from_json file
+          end
+          test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
+          test_group.permissions["/some/path"]?.should_not be_nil
         end
         test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
         test_group.permissions["/some/path"]?.should_not be_nil
@@ -295,9 +357,12 @@ module DppmRestApi::CLI
     end
     describe "#delete_group" do
       it "can remove a group" do
-        delete_group id: "1000", data_dir: __DIR__
-        new_state = File.open PERMISSION_FILE do |file|
-          Config.from_json file
+        with_state_restore do
+          delete_group id: "1000", data_dir: __DIR__
+          new_state = File.open permissions_file! do |file|
+            Config.from_json file
+          end
+          new_state.groups.find { |grp| grp.id == 1000 }.should be_nil
         end
         new_state.groups.find { |grp| grp.id == 1000 }.should be_nil
       end
