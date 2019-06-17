@@ -4,14 +4,14 @@ require "../src/cli"
 module DppmRestApi::CLI
   def self.restore_to_original(state_file : File?)
     state_file.try do |file|
-      File.open permissions_file!, mode: "w" do |dest|
+      File.open PERMISSION_FILE, mode: "w" do |dest|
         File.open file.path do |src|
           IO.copy src, dest
         end
       end
       File.delete file.path
     end
-    File.open permissions_file! do |file|
+    File.open PERMISSION_FILE do |file|
       DppmRestApi.permissions_config = Config.from_json file
     end
   end
@@ -93,7 +93,7 @@ module DppmRestApi::CLI
           tmp = File.tempname
           add_user name: "added user", groups: "500", data_dir: __DIR__, output_file: tmp
           key = File.read_lines(tmp)[1]
-          config = File.open permissions_file! do |permissions_file|
+          config = File.open PERMISSION_FILE do |permissions_file|
             Config.from_json permissions_file.rewind
           end
           if user = config.users.find { |usr| usr.name == "added user" }
@@ -125,7 +125,7 @@ module DppmRestApi::CLI
           add_groups: "500",
           remove_groups: "499",
           data_dir: __DIR__
-        new_state = File.open permissions_file! do |file|
+        new_state = File.open PERMISSION_FILE do |file|
           Config.from_json file
         end
         new_state.users.find { |usr| usr.name == "Jim Oliver" }.should be_nil
@@ -158,7 +158,7 @@ module DppmRestApi::CLI
           api_key: nil,
           data_dir: __DIR__,
           output_file: data_file.path
-        new_state = File.open permissions_file! do |file|
+        new_state = File.open PERMISSION_FILE do |file|
           Config.from_json file
         end
         new_key = File.read_lines(data_file.path)[1]
@@ -177,7 +177,7 @@ module DppmRestApi::CLI
     it "deletes a user" do
       with_state_restore do
         delete_users match_name: nil, match_groups: "0", api_key: nil, data_dir: __DIR__
-        new_state = File.open permissions_file! do |file|
+        new_state = File.open PERMISSION_FILE do |file|
           Config.from_json file
         end
         new_state.users.find { |usr| usr.name == "Administrator" }.should be_nil
@@ -228,7 +228,7 @@ module DppmRestApi::CLI
           name: "test-added group",
           permissions: new_grp_permissions.to_json,
           data_dir: __DIR__)
-        new_state = File.open permissions_file! do |file|
+        new_state = File.open PERMISSION_FILE do |file|
           Config.from_json file
         end
         new_state.groups.find { |group| group.id == 1234 }.should_not be_nil
@@ -267,7 +267,7 @@ module DppmRestApi::CLI
           path: "/**",
           access: "Read",
           data_dir: __DIR__
-        new_state = File.open permissions_file! do |file|
+        new_state = File.open PERMISSION_FILE do |file|
           Config.from_json file.rewind
         end
         if su = new_state.groups.find { |group| group.id == 0 }
@@ -327,7 +327,7 @@ module DppmRestApi::CLI
             key: "test-key",
             add_glob: "test-glob",
             remove_glob: nil
-          new_state = File.open permissions_file! do |file|
+          new_state = File.open PERMISSION_FILE do |file|
             Config.from_json file
           end
           test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
@@ -345,7 +345,7 @@ module DppmRestApi::CLI
       it "can add a path to a group's #permissions values" do
         with_state_restore do
           add_route id: "1000", access: "Read", path: "/some/path", data_dir: __DIR__
-          new_state = File.open permissions_file! do |file|
+          new_state = File.open PERMISSION_FILE do |file|
             Config.from_json file
           end
           test_group = new_state.groups.find { |grp| grp.id == 1000 }.not_nil!
@@ -359,7 +359,7 @@ module DppmRestApi::CLI
       it "can remove a group" do
         with_state_restore do
           delete_group id: "1000", data_dir: __DIR__
-          new_state = File.open permissions_file! do |file|
+          new_state = File.open PERMISSION_FILE do |file|
             Config.from_json file
           end
           new_state.groups.find { |grp| grp.id == 1000 }.should be_nil
