@@ -7,6 +7,7 @@ module DppmRestApi::Actions::Src
       it "responds with 401 Forbidden" do
         get fmt_route
         response.status_code.should eq 401
+        ErrorResponse.from_json(response.body).errors.should contain "Unauthorized"
       end
     end
     # {% for src_type in ["lib", "app"] %}

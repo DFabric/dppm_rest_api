@@ -12,6 +12,11 @@ def new_test_context(verb = "GET", path = "/api/test")
   {backing_io, HTTP::Server::Context.new(request, response)}
 end
 
+struct ErrorResponse
+  property errors : Array(String)
+  include JSON::Serializable
+end
+
 Kemal.config.env = "test"
 
 # Set up the mock permissions.json
