@@ -19,6 +19,13 @@ end
 
 Kemal.config.env = "test"
 
+already_running = false
+
+def run_server
+  DppmRestApi.run Socket::IPAddress::LOOPBACK, DPPM::Prefix.default_dppm_config.port, __DIR__
+  already_running = true
+end
+
 # Set up the mock permissions.json
 
 # the location
@@ -27,7 +34,7 @@ PERMISSION_FILE = Path[__DIR__, "permissions.json"]
 Spec.before_each do
   DppmRestApi.permissions_config = Fixtures.permissions_config
   DppmRestApi.permissions_config.write_to PERMISSION_FILE
-  DppmRestApi.run Socket::IPAddress::LOOPBACK, DPPM::Prefix.default_dppm_config.port, __DIR__
+  run_server unless already_running
 end
 # Clean up after ourselves
 Spec.after_each do
