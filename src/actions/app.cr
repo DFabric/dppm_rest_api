@@ -44,7 +44,7 @@ module DppmRestApi::Actions::App
       if key == "."
         dump_config context, app
       elsif config = app.get_config(key)
-        {"data" => config}.to_json context.response
+        {data: config}.to_json context.response
       else
         raise NotFound.new context, "no config with app named '#{app_name}' found"
       end

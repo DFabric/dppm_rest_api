@@ -12,31 +12,35 @@ def new_test_context(verb = "GET", path = "/api/test")
   {backing_io, HTTP::Server::Context.new(request, response)}
 end
 
-struct ErrorResponse
-  property errors : Array(String)
+struct ErrorData
   include JSON::Serializable
+  property type : String
+  property message : String
+  property status_code : Int32?
+end
+
+struct ErrorResponse
+  include JSON::Serializable
+  property errors : Array(ErrorData)
 end
 
 Kemal.config.env = "test"
-
-already_running = false
-
-def run_server
-  DppmRestApi.run Socket::IPAddress::LOOPBACK, DPPM::Prefix.default_dppm_config.port, __DIR__
-  already_running = true
-end
 
 # Set up the mock permissions.json
 
 # the location
 PERMISSION_FILE = Path[__DIR__, "permissions.json"]
 
-Spec.before_each do
+# Set all configs to the expected values.
+def reset_config
   DppmRestApi.permissions_config = Fixtures.permissions_config
   DppmRestApi.permissions_config.write_to PERMISSION_FILE
-  run_server unless already_running
 end
+
+reset_config
+# Run the server
+DppmRestApi.run Socket::IPAddress::LOOPBACK, DPPM::Prefix.default_dppm_config.port, __DIR__
+# Set all configs back to the expected values, in case they changed
+Spec.before_each { reset_config }
 # Clean up after ourselves
-Spec.after_each do
-  File.delete PERMISSION_FILE if File.exists? PERMISSION_FILE
-end
+Spec.after_each { File.delete PERMISSION_FILE if File.exists? PERMISSION_FILE }
