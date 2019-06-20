@@ -6,11 +6,7 @@ module DppmRestApi::Actions::Src
     describe "get root path" do
       it "responds with 401 Forbidden" do
         get fmt_route
-        response.status_code.should eq 401
-        ErrorResponse.from_json(response.body)
-          .errors
-          .find { |err| err.message == "Unauthorized" }
-          .should_not be_nil
+        assert_unauthorized response
       end
     end
     # {% for src_type in ["lib", "app"] %}

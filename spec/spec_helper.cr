@@ -24,6 +24,14 @@ struct ErrorResponse
   property errors : Array(ErrorData)
 end
 
+def assert_unauthorized(response : HTTP::Client::Response)
+  response.status_code.should eq 401
+  ErrorResponse.from_json(response.body)
+    .errors
+    .find { |err| err.message == "Unauthorized" }
+    .should_not be_nil
+end
+
 Kemal.config.env = "test"
 
 # Set up the mock permissions.json
