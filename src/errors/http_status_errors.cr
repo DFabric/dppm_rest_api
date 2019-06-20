@@ -2,10 +2,14 @@ require "http"
 require "./exception"
 
 module DppmRestApi
+  abstract class HTTPStatusError < Exception
+    abstract def status_code
+  end
+
   {% for status_code in HTTP::Status.constants %}
   {% type_name = status_code.stringify.downcase.camelcase.id %}
   # An exception for the {{status_code}} status
-  class {{type_name.id}} < Exception
+  class {{type_name.id}} < HTTPStatusError
     STATUS_CODE = HTTP::Status::{{status_code}}
 
     def status_code

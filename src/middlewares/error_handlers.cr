@@ -10,8 +10,8 @@ struct ErrorData
   def initialize(@type, @message, @status_code = nil)
   end
 
-  def self.from(error : Exception)
-    if error.responds_to? :status_code
+  def self.new(error : Exception)
+    if error.is_a? DppmRestApi::HTTPStatusError
       # expected error handler type
       new(
         type: error.class.to_s,
@@ -35,10 +35,10 @@ struct ErrorResponse
   def initialize(@errors)
   end
 
-  def self.from(error : Exception)
-    messages = [ErrorData.from error]
+  def self.new(error : Exception)
+    messages = [ErrorData.new error]
     while error = error.cause
-      messages << ErrorData.from error
+      messages << ErrorData.new error
     end
     new messages
   end
@@ -63,7 +63,7 @@ macro initialize_error_handlers
   if HTTP::Status::{{code}}.value >= 400
     Kemal.config.add_error_handler HTTP::Status::{{code.id}}.value do |context, exception|
       context.response.status_code = exception.status_code.value if exception.responds_to? :status_code
-      response_data = ErrorResponse.from exception
+      response_data = ErrorResponse.new exception
       response_data.to_json context.response
       context.response.flush
       response_data.log

@@ -14,10 +14,13 @@ end
 
 def assert_unauthorized(response : HTTP::Client::Response)
   response.status_code.should eq 401
-  ErrorResponse.from_json(response.body)
+  found = ErrorResponse.from_json(response.body)
     .errors
-    .find { |err| err.message == "Unauthorized" }
-    .should_not be_nil
+    .find do |err|
+      err.message == "Unauthorized" &&
+        err.status_code == HTTP::Status::UNAUTHORIZED
+    end
+  fail "expected error response not found" unless found
 end
 
 Kemal.config.env = "test"
@@ -34,6 +37,7 @@ def reset_config
 end
 
 reset_config
+
 # Run the server
 DppmRestApi.run Socket::IPAddress::LOOPBACK, DPPM::Prefix.default_dppm_config.port, __DIR__
 # Set all configs back to the expected values, in case they changed
