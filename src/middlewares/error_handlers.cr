@@ -7,7 +7,9 @@ struct ErrorData
   property message : String?
   property status_code : HTTP::Status?
 
-  def initialize(@type, @message, @status_code = nil)
+  def initialize(@type : String,
+                 @message : String?,
+                 @status_code : HTTP::Status? = nil)
   end
 
   def self.new(error : Exception)
@@ -32,7 +34,7 @@ struct ErrorResponse
   include JSON::Serializable
   property errors : Array(ErrorData)
 
-  def initialize(@errors)
+  def initialize(@errors : Array(ErrorData))
   end
 
   def self.new(error : Exception)

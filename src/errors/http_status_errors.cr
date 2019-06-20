@@ -16,10 +16,6 @@ module DppmRestApi
       STATUS_CODE
     end
 
-    def self.status_code
-      STATUS_CODE
-    end
-
     getter context : HTTP::Server::Context
     def initialize(@context : HTTP::Server::Context, message : String? = nil)
       @context.response.status_code = self.status_code.value

@@ -1,5 +1,3 @@
-require "../actions"
-
 module DppmRestApi::Actions::Src
   extend self
   relative_get "" do |context|

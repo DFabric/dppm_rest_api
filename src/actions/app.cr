@@ -1,5 +1,4 @@
 require "dppm"
-require "../actions"
 require "dppm/prefix"
 
 module DppmRestApi::Actions::App

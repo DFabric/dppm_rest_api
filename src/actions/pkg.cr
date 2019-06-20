@@ -1,5 +1,3 @@
-require "../actions"
-
 module DppmRestApi::Actions::Pkg
   extend self
   ALL_PKGS = ""
