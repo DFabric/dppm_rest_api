@@ -12,18 +12,6 @@ def new_test_context(verb = "GET", path = "/api/test")
   {backing_io, HTTP::Server::Context.new(request, response)}
 end
 
-struct ErrorData
-  include JSON::Serializable
-  property type : String
-  property message : String
-  property status_code : Int32?
-end
-
-struct ErrorResponse
-  include JSON::Serializable
-  property errors : Array(ErrorData)
-end
-
 def assert_unauthorized(response : HTTP::Client::Response)
   response.status_code.should eq 401
   ErrorResponse.from_json(response.body)
