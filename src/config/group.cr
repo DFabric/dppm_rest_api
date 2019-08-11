@@ -38,5 +38,6 @@ struct DppmRestApi::Config::Group
     "/{app,pkg,src,service}/**" => Route.new(
       Access::All,
       {"namespace" => ["default-namespace"]}),
+    "/user/me" => Route.new(Access::Read),
   }
 end

@@ -32,12 +32,12 @@ echo '{"groups":[], "users": []}' > $DATA_DIR/permissions.json
 
 shards build
 bin/dppm server group add "name=${DPPM_USER}s group" id=$GROUP_ID
-bin/dppm server add_user "name=$DPPM_USER" groups=$GROUP_ID
+bin/dppm server user add "name=$DPPM_USER" groups=$GROUP_ID
 
 if [ $ADMIN = yes ]; then
   make_admin
 fi
 
-bin/dppm server run
+bin/dppm server run host="127.0.0.1"
 
 rm -r data
